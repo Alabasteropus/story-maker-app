@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { VStack, HStack, Heading, Textarea, Button, Input, Select, Progress, Text, Image, useToast, Box, IconButton } from '@chakra-ui/react';
+import { VStack, HStack, Heading, Textarea, Button, Input, Select, Progress, Text, Image, useToast, Box, IconButton, Flex, Spacer } from '@chakra-ui/react';
 import { useSelector, useDispatch } from 'react-redux';
-import { ArrowUpIcon, ArrowDownIcon } from '@chakra-ui/icons';
+import { DragHandleIcon } from '@chakra-ui/icons';
 import axios from 'axios';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { addShot, updateShot, moveShot, removeShot, selectShots } from '../store/shotSlice';
 
 function ShotProgressionEditor() {
@@ -158,91 +159,132 @@ function ShotProgressionEditor() {
     });
   };
 
-  const handleMoveShot = (index, direction) => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex >= 0 && newIndex < shots.length) {
-      dispatch(moveShot({ fromIndex: index, toIndex: newIndex }));
+  const onDragEnd = (result) => {
+    if (!result.destination) {
+      return;
     }
+
+    dispatch(moveShot({
+      fromIndex: result.source.index,
+      toIndex: result.destination.index
+    }));
   };
 
   return (
-    <VStack spacing={4} align="stretch">
-      <Heading as="h2" size="lg">Shot Progression Editor</Heading>
-      <Progress value={(shots.length / 10) * 100} />
-      <HStack>
+    <HStack spacing={4} align="stretch" height="100vh">
+      {/* Left Column: Shot List */}
+      <VStack width="25%" bg="gray.800" p={4} borderRadius="md" overflowY="auto">
+        <Heading as="h3" size="md" mb={4} color="blue.300">Shots</Heading>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="shotList">
+            {(provided) => (
+              <VStack
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                spacing={2}
+                width="100%"
+              >
+                {shots.map((s, index) => (
+                  <Draggable key={s.id} draggableId={s.id.toString()} index={index}>
+                    {(provided) => (
+                      <Flex
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        p={2}
+                        bg="gray.700"
+                        borderRadius="md"
+                        width="100%"
+                        cursor="pointer"
+                        onClick={() => setShot(s)}
+                        _hover={{ bg: "gray.600" }}
+                      >
+                        <Text fontWeight="bold" color="blue.300">{index + 1}: {s.name}</Text>
+                        <Spacer />
+                        <DragHandleIcon color="gray.400" />
+                      </Flex>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </VStack>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </VStack>
+
+      {/* Middle Column: Shot Details */}
+      <VStack width="50%" spacing={4} p={4} bg="gray.800" borderRadius="md">
+        <Heading as="h2" size="lg" color="blue.300">Shot Progression Editor</Heading>
+        <Progress value={(shots.length / 10) * 100} width="100%" colorScheme="blue" />
         <Input
           name="name"
           value={shot.name}
           onChange={handleInputChange}
           placeholder="Shot Name"
+          bg="gray.700"
+          color="white"
         />
-      </HStack>
-      <Select placeholder="Select scene" onChange={handleSceneChange} value={shot.sceneId}>
-        {scenes.map((scene) => (
-          <option key={scene.id} value={scene.id}>{scene.name}</option>
-        ))}
-      </Select>
-      <Select multiple onChange={handleCharacterChange} value={shot.characterIds}>
-        {characters.map((character) => (
-          <option key={character.id} value={character.id}>{character.name}</option>
-        ))}
-      </Select>
-      <Textarea
-        name="description"
-        value={shot.description}
-        onChange={handleInputChange}
-        placeholder="Shot Description"
-      />
-      <Input
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-      />
-      <Input
-        type="file"
-        accept="video/*"
-        onChange={handleVideoUpload}
-      />
-      {videoPreviewUrl && (
-        <Box>
-          <video width="100%" controls>
-            <source src={videoPreviewUrl} type={shot.video.type} />
-            Your browser does not support the video tag.
-          </video>
-        </Box>
-      )}
-      <HStack>
-        <Button colorScheme="blue" onClick={() => handleSaveShot(false)}>
-          Save Shot
-        </Button>
-        <Button colorScheme="green" onClick={() => handleSaveShot(true)}>
-          Save Shot and Generate Image
-        </Button>
-      </HStack>
-      <VStack align="stretch">
-        {shots.map((s, index) => (
-          <HStack key={s.id} justify="space-between">
-            <Text>{index + 1}: {s.name}</Text>
-            <Text>Scene: {scenes.find(scene => scene.id === s.sceneId)?.name}</Text>
-            <Text>Characters: {s.characterIds.map(id => characters.find(char => char.id === id)?.name).join(', ')}</Text>
-            <Button size="sm" onClick={() => setShot(s)}>Edit</Button>
-            <IconButton
-              icon={<ArrowUpIcon />}
-              onClick={() => handleMoveShot(index, 'up')}
-              isDisabled={index === 0}
-            />
-            <IconButton
-              icon={<ArrowDownIcon />}
-              onClick={() => handleMoveShot(index, 'down')}
-              isDisabled={index === shots.length - 1}
-            />
-            {s.generatedImageUrl && (
-              <Image src={s.generatedImageUrl} alt={`Generated image for ${s.name}`} maxWidth="200px" />
-            )}
-          </HStack>
-        ))}
+        <Select placeholder="Select scene" onChange={handleSceneChange} value={shot.sceneId} bg="gray.700" color="white">
+          {scenes.map((scene) => (
+            <option key={scene.id} value={scene.id}>{scene.name}</option>
+          ))}
+        </Select>
+        <Select multiple onChange={handleCharacterChange} value={shot.characterIds} bg="gray.700" color="white">
+          {characters.map((character) => (
+            <option key={character.id} value={character.id}>{character.name}</option>
+          ))}
+        </Select>
+        <Textarea
+          name="description"
+          value={shot.description}
+          onChange={handleInputChange}
+          placeholder="Shot Description"
+          bg="gray.700"
+          color="white"
+        />
+        <HStack width="100%">
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            bg="gray.700"
+            color="white"
+          />
+          <Input
+            type="file"
+            accept="video/*"
+            onChange={handleVideoUpload}
+            bg="gray.700"
+            color="white"
+          />
+        </HStack>
+        <HStack>
+          <Button colorScheme="blue" onClick={() => handleSaveShot(false)}>
+            Save Shot
+          </Button>
+          <Button colorScheme="green" onClick={() => handleSaveShot(true)}>
+            Save Shot and Generate Image
+          </Button>
+        </HStack>
       </VStack>
-    </VStack>
+
+      {/* Right Column: Image and Video Preview */}
+      <VStack width="25%" bg="gray.800" p={4} borderRadius="md" overflowY="auto">
+        <Heading as="h3" size="md" mb={4} color="blue.300">Preview</Heading>
+        {shot.generatedImageUrl && (
+          <Image src={shot.generatedImageUrl} alt={`Generated image for ${shot.name}`} maxWidth="100%" mb={4} borderRadius="md" />
+        )}
+        {videoPreviewUrl && (
+          <Box width="100%">
+            <video width="100%" controls>
+              <source src={videoPreviewUrl} type={shot.video.type} />
+              Your browser does not support the video tag.
+            </video>
+          </Box>
+        )}
+      </VStack>
+    </HStack>
   );
 }
 
