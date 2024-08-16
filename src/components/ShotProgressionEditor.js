@@ -115,22 +115,8 @@ function ShotProgressionEditor() {
     }
   };
 
-  const handleSaveShot = async (generateImage = false) => {
+  const handleSaveShot = async () => {
     let updatedShot = { ...shot };
-
-    if (generateImage) {
-      toast({
-        title: 'Generating image...',
-        status: 'info',
-        duration: null,
-        isClosable: false,
-      });
-
-      const generatedImageUrl = await generateImage();
-      if (generatedImageUrl) {
-        updatedShot.generatedImageUrl = generatedImageUrl;
-      }
-    }
 
     if (shots.find(s => s.id === shot.id)) {
       dispatch(updateShot(updatedShot));
@@ -152,11 +138,34 @@ function ShotProgressionEditor() {
     setVideoPreviewUrl(null);
 
     toast({
-      title: generateImage ? 'Shot saved with generated image' : 'Shot saved',
+      title: 'Shot saved',
       status: 'success',
       duration: 2000,
       isClosable: true,
     });
+  };
+
+  const handleGenerateImage = async () => {
+    toast({
+      title: 'Generating image...',
+      status: 'info',
+      duration: null,
+      isClosable: false,
+    });
+
+    const generatedImageUrl = await generateImage();
+    if (generatedImageUrl) {
+      const updatedShot = { ...shot, generatedImageUrl };
+      dispatch(updateShot(updatedShot));
+      setShot(updatedShot);
+
+      toast({
+        title: 'Image generated and saved',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+    }
   };
 
   const onDragEnd = (result) => {
@@ -260,11 +269,11 @@ function ShotProgressionEditor() {
           />
         </HStack>
         <HStack>
-          <Button colorScheme="blue" onClick={() => handleSaveShot(false)}>
+          <Button colorScheme="blue" onClick={handleSaveShot}>
             Save Shot
           </Button>
-          <Button colorScheme="green" onClick={() => handleSaveShot(true)}>
-            Save Shot and Generate Image
+          <Button colorScheme="green" onClick={handleGenerateImage} isDisabled={!shot.id}>
+            Generate Image
           </Button>
         </HStack>
       </VStack>
