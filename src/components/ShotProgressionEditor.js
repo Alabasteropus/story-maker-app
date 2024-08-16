@@ -115,8 +115,8 @@ function ShotProgressionEditor() {
     }
   };
 
-  const handleSaveShot = async () => {
-    let updatedShot = { ...shot };
+  const handleSaveShot = () => {
+    const updatedShot = { ...shot };
 
     if (shots.find(s => s.id === shot.id)) {
       dispatch(updateShot(updatedShot));
@@ -124,6 +124,7 @@ function ShotProgressionEditor() {
       dispatch(addShot(updatedShot));
     }
 
+    // Reset the form after saving
     setShot({
       id: Date.now(),
       number: '',
@@ -138,7 +139,8 @@ function ShotProgressionEditor() {
     setVideoPreviewUrl(null);
 
     toast({
-      title: 'Shot saved',
+      title: 'Shot saved successfully',
+      description: 'The shot details have been saved without generating an image.',
       status: 'success',
       duration: 2000,
       isClosable: true,
